@@ -13,7 +13,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from robot.utils import getdoc, is_union, type_name
+from robot.utils import getdoc, is_union, seq2str, type_name
 
 from .argumentparser import PythonArgumentParser
 
@@ -69,18 +69,14 @@ class ConverterInfo:
         if not isinstance(type_, type):
             raise TypeError(f'Custom converters must be specified using types, '
                             f'got {type_name(type_)} {type_!r}.')
+        if converter is None:
+            def converter(arg):
+                raise TypeError(f'Only {type_.__name__} instances are accepted, '
+                                f'got {type_name(arg)}.')
         if not callable(converter):
             raise TypeError(f'Custom converters must be callable, converter for '
                             f'{type_name(type_)} is {type_name(converter)}.')
-        spec = PythonArgumentParser(type='Converter').parse(converter)
-        if len(spec.positional) != 1:
-            raise TypeError(f'Custom converters must accept exactly one positional '
-                            f'argument, converter {converter.__name__!r} accepts '
-                            f'{len(spec.positional)}.')
-        if len(spec.named_only):
-            raise TypeError(f'Custom converter {converter.__name__!r} accepts '
-                            f'keyword-only arguments which is not supported.')
-        arg_type = spec.types.get(spec.positional[0])
+        arg_type = cls._get_arg_type(converter)
         if arg_type is None:
             accepts = ()
         elif is_union(arg_type):
@@ -90,3 +86,19 @@ class ConverterInfo:
         else:
             accepts = (arg_type,)
         return cls(type_, converter, accepts)
+
+    @classmethod
+    def _get_arg_type(cls, converter):
+        spec = PythonArgumentParser(type='Converter').parse(converter)
+        if spec.minargs > 1:
+            required = seq2str([a for a in spec.positional if a not in spec.defaults])
+            raise TypeError(f"Custom converters cannot have more than one mandatory "
+                            f"argument, '{converter.__name__}' has {required}.")
+        if not spec.positional:
+            raise TypeError(f"Custom converters must accept one positional argument, "
+                            f"'{converter.__name__}' accepts none.")
+        if spec.named_only and set(spec.named_only) - set(spec.defaults):
+            required = seq2str(sorted(set(spec.named_only) - set(spec.defaults)))
+            raise TypeError(f"Custom converters cannot have mandatory keyword-only "
+                            f"arguments, '{converter.__name__}' has {required}.")
+        return spec.types.get(spec.positional[0])

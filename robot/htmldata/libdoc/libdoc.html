@@ -40,7 +40,7 @@
     }, false);
     window.addEventListener("hashchange", function() {
         if (window.location.hash.indexOf('#type-') == 0) {
-            const hash = '#' + decodeURI(window.location.hash.slice(6));
+            const hash = '#type-modal-' + decodeURI(window.location.hash.slice(6));
             const typeDoc = document.querySelector(".data-types").querySelector(hash);
             if (typeDoc) {
               showModal(typeDoc);
@@ -55,6 +55,7 @@
         parseTemplates();
         document.title = libdoc.name;
         storage.init('libdoc');
+        setTheme();
         renderTemplate('base', libdoc, $('body'));
         if (libdoc.inits.length) {
             libdoc.typedocs.map(function(type) {
@@ -87,6 +88,20 @@
       }, 0);
         createModal();
     });
+
+    function setTheme(theme) {
+        document.documentElement.setAttribute('data-theme', theme || getTheme());
+    }
+
+    function getTheme() {
+        if (libdoc['theme']) {
+            return libdoc['theme'];
+        } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            return 'dark';
+        } else {
+            return 'light;'
+        }
+    }
 
     function parseTemplates() {
         $('script[type="text/x-jquery-tmpl"]').map(function (idx, elem) {
@@ -561,7 +576,7 @@ ${name}
   <span class="arg-type">
     {{each types}}
       {{if $value in $data.typedocs}}
-          &lt;<a style="cursor: pointer;" class="type" title="Click to show type information" onclick="showModal(${$data.typedocs[$value]})">${$value}</a>&gt;
+          &lt;<a style="cursor: pointer;" class="type" title="Click to show type information" onclick="showModal(document.querySelector('#type-modal-${$data.typedocs[$value]}'))">${$value}</a>&gt;
       {{else}}
           &lt;<span class="type">${$value}</span>&gt;
       {{/if}}
@@ -584,7 +599,7 @@ ${name}
 </script>
 
 <script type="text/x-jquery-tmpl" id="data-type-template">
-    <div class="data-type-container {{if hidden}}no-{{/if}}match" id="${name}">
+    <div class="data-type-container {{if hidden}}no-{{/if}}match" id="type-modal-${name}">
        <div class="data-type-name">
             <h2>${name} (${type})</h2>
        </div>

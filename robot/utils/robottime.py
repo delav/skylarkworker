@@ -15,6 +15,7 @@
 
 import re
 import time
+from datetime import timedelta
 
 from .normalizing import normalize
 from .misc import plural_or_not
@@ -39,7 +40,16 @@ def _float_secs_to_secs_and_millis(secs):
 
 
 def timestr_to_secs(timestr, round_to=3, accept_plain_values=True):
-    """Parses time like '1h 10s', '01:00:10' or '42' and returns seconds."""
+    """Parses time strings like '1h 10s', '01:00:10' and '42' and returns seconds.
+
+    Time can also be given as an integer or float or, starting from RF 6.0.1,
+    as a `timedelta` instance.
+
+    The result is rounded according to the `round_to` argument.
+    Use `round_to=None` to disable rounding altogether.
+
+    `accept_plain_values` is considered deprecated and should not be used.
+    """
     if is_string(timestr) or is_number(timestr):
         if accept_plain_values:
             converters = [_number_to_secs, _timer_to_secs, _time_string_to_secs]
@@ -49,6 +59,8 @@ def timestr_to_secs(timestr, round_to=3, accept_plain_values=True):
             secs = converter(timestr)
             if secs is not None:
                 return secs if round_to is None else round(secs, round_to)
+    if isinstance(timestr, timedelta):
+        return timestr.total_seconds()
     raise ValueError("Invalid time string '%s'." % timestr)
 
 
@@ -78,7 +90,7 @@ def _time_string_to_secs(timestr):
     timestr = _normalize_timestr(timestr)
     if not timestr:
         return None
-    millis = secs = mins = hours = days = 0
+    nanos = micros = millis = secs = mins = hours = days = 0
     if timestr[0] == '-':
         sign = -1
         timestr = timestr[1:]
@@ -87,7 +99,9 @@ def _time_string_to_secs(timestr):
     temp = []
     for c in timestr:
         try:
-            if   c == 'x': millis = float(''.join(temp)); temp = []
+            if   c == 'n': nanos  = float(''.join(temp)); temp = []
+            elif c == 'u': micros = float(''.join(temp)); temp = []
+            elif c == 'x': millis = float(''.join(temp)); temp = []
             elif c == 's': secs   = float(''.join(temp)); temp = []
             elif c == 'm': mins   = float(''.join(temp)); temp = []
             elif c == 'h': hours  = float(''.join(temp)); temp = []
@@ -97,12 +111,15 @@ def _time_string_to_secs(timestr):
             return None
     if temp:
         return None
-    return sign * (millis/1000 + secs + mins*60 + hours*60*60 + days*60*60*24)
+    return sign * (nanos/1E9 + micros/1E6 + millis/1000 + secs +
+                   mins*60 + hours*60*60 + days*60*60*24)
 
 
 def _normalize_timestr(timestr):
     timestr = normalize(timestr)
-    for specifier, aliases in [('x', ['millisecond', 'millisec', 'millis',
+    for specifier, aliases in [('n', ['nanosecond', 'ns']),
+                               ('u', ['microsecond', 'us', 'μs']),
+                               ('x', ['millisecond', 'millisec', 'millis',
                                       'msec', 'ms']),
                                ('s', ['second', 'sec']),
                                ('m', ['minute', 'min']),
@@ -214,7 +231,7 @@ def get_time(format='timestamp', time_=None):
     - Otherwise (and by default) the time is returned as a timestamp string in
       format '2006-02-24 15:08:31'
     """
-    time_ = int(time_ or time.time())
+    time_ = int(time.time() if time_ is None else time_)
     format = format.lower()
     # 1) Return time in seconds since epoc
     if 'epoch' in format:

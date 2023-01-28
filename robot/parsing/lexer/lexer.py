@@ -16,7 +16,7 @@
 from itertools import chain
 
 from robot.errors import DataError
-from robot.utils import get_error_message, FileReader
+from robot.utils import get_error_message, FileReader, DataReader
 
 from .blocklexers import FileLexer
 from .context import InitFileContext, TestCaseFileContext, ResourceFileContext
@@ -24,7 +24,7 @@ from .tokenizer import Tokenizer
 from .tokens import EOS, END, Token
 
 
-def get_tokens(source, data_only=False, tokenize_variables=False):
+def get_tokens(source, data_only=False, tokenize_variables=False, lang=None):
     """Parses the given source to tokens.
 
     :param source: The source where to read the data. Can be a path to
@@ -38,34 +38,39 @@ def get_tokens(source, data_only=False, tokenize_variables=False):
         arguments and elsewhere are tokenized. See the
         :meth:`~robot.parsing.lexer.tokens.Token.tokenize_variables`
         method for details.
+    :param lang: Additional languages to be supported during parsing.
+        Can be a string matching any of the supported language codes or names,
+        an initialized :class:`~robot.conf.languages.Language` subsclass,
+        a list containing such strings or instances, or a
+        :class:`~robot.conf.languages.Languages` instance.
 
     Returns a generator that yields :class:`~robot.parsing.lexer.tokens.Token`
     instances.
     """
-    lexer = Lexer(TestCaseFileContext(), data_only, tokenize_variables)
+    lexer = Lexer(TestCaseFileContext(lang=lang), data_only, tokenize_variables)
     lexer.input(source)
     return lexer.get_tokens()
 
 
-def get_resource_tokens(source, data_only=False, tokenize_variables=False):
+def get_resource_tokens(source, data_only=False, tokenize_variables=False, lang=None):
     """Parses the given source to resource file tokens.
 
-    Otherwise same as :func:`get_tokens` but the source is considered to be
+    Same as :func:`get_tokens` otherwise, but the source is considered to be
     a resource file. This affects, for example, what settings are valid.
     """
-    lexer = Lexer(ResourceFileContext(), data_only, tokenize_variables)
+    lexer = Lexer(ResourceFileContext(lang=lang), data_only, tokenize_variables)
     lexer.input(source)
     return lexer.get_tokens()
 
 
-def get_init_tokens(source, data_only=False, tokenize_variables=False):
+def get_init_tokens(source, data_only=False, tokenize_variables=False, lang=None):
     """Parses the given source to init file tokens.
 
-    Otherwise same as :func:`get_tokens` but the source is considered to be
+    Same as :func:`get_tokens` otherwise, but the source is considered to be
     a suite initialization file. This affects, for example, what settings are
     valid.
     """
-    lexer = Lexer(InitFileContext(), data_only, tokenize_variables)
+    lexer = Lexer(InitFileContext(lang=lang), data_only, tokenize_variables)
     lexer.input(source)
     return lexer.get_tokens()
 
@@ -93,10 +98,8 @@ class Lexer:
 
     def _read(self, source):
         try:
-            print(source)
-            with FileReader(source, accept_text=True) as reader:
-                return reader.read()
-        except:
+            return DataReader().read(source)
+        except Exception:
             raise DataError(get_error_message())
 
     def get_tokens(self):

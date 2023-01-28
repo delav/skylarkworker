@@ -71,11 +71,12 @@ class HeaderAndBody(Block):
 
 class File(Block):
     _fields = ('sections',)
-    _attributes = ('source',) + Block._attributes
+    _attributes = ('source', 'languages') + Block._attributes
 
-    def __init__(self, sections=None, source=None):
+    def __init__(self, sections=None, source=None, languages=()):
         self.sections = sections or []
         self.source = source
+        self.languages = languages
 
     def save(self, output=None):
         """Save model to the given ``output`` or to the original source file.
@@ -107,11 +108,12 @@ class VariableSection(Section):
     pass
 
 
+# FIXME: should there be a separate TaskSection?
 class TestCaseSection(Section):
 
     @property
     def tasks(self):
-        return self.header.name.upper() in ('TASKS', 'TASK')
+        return self.header.type == Token.TASK_HEADER
 
 
 class KeywordSection(Section):

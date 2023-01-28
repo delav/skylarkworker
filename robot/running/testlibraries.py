@@ -13,6 +13,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from functools import partial
 import inspect
 import os
 
@@ -73,7 +74,7 @@ class _BaseTestLibrary:
         self.source = source
         self.logger = logger
         self.converters = self._get_converters(libcode)
-        self.handlers = HandlerStore(self.name, HandlerStore.LIBRARY_TYPE)
+        self.handlers = HandlerStore()
         self.has_listener = None  # Set when first instance is created
         self._doc = None
         self.doc_format = self._get_doc_format(libcode)
@@ -111,8 +112,11 @@ class _BaseTestLibrary:
         self._create_handlers(self.get_instance())
         self.reset_instance()
 
+    def handlers_for(self, name):
+        return self.handlers.get_handlers(name)
+
     def reload(self):
-        self.handlers = HandlerStore(self.name, HandlerStore.LIBRARY_TYPE)
+        self.handlers = HandlerStore()
         self._create_handlers(self.get_instance())
 
     def start_suite(self):
@@ -224,7 +228,7 @@ class _BaseTestLibrary:
         try:
             if method:
                 method()
-        except:
+        except Exception:
             message, details = get_error_details()
             name = getattr(listener, '__name__', None) or type_name(listener)
             self.report_error("Calling method '%s' of listener '%s' failed: %s"
@@ -233,7 +237,7 @@ class _BaseTestLibrary:
     def _create_handlers(self, libcode):
         try:
             names = self._get_handler_names(libcode)
-        except:
+        except Exception:
             message, details = get_error_details()
             raise DataError("Getting keyword names from library '%s' failed: %s"
                             % (self.name, message), details)
@@ -282,17 +286,17 @@ class _BaseTestLibrary:
     def _get_handler_method(self, libcode, name):
         try:
             method = getattr(libcode, name)
-        except:
+        except Exception:
             message, details = get_error_details()
-            raise DataError('Getting handler method failed: %s' % message,
-                            details)
+            raise DataError(f'Getting handler method failed: {message}', details)
         self._validate_handler_method(method)
         return method
 
     def _validate_handler_method(self, method):
-        if not inspect.isroutine(method):
+        # isroutine returns false for partial objects. This may change in Python 3.11.
+        if not (inspect.isroutine(method) or isinstance(method, partial)):
             raise DataError('Not a method or function.')
-        if getattr(method, 'robot_not_keyword', False) is True:
+        if getattr(method, 'robot_not_keyword', False):
             raise DataError('Not exposed as a keyword.')
         return method
 
@@ -312,10 +316,10 @@ class _BaseTestLibrary:
         return Handler(self, handler_name, handler_method)
 
     def _get_possible_embedded_args_handler(self, handler):
-        embedded = EmbeddedArguments(handler.name)
+        embedded = EmbeddedArguments.from_name(handler.name)
         if embedded:
             self._validate_embedded_count(embedded, handler.arguments)
-            return EmbeddedArgumentsHandler(embedded.name, handler), True
+            return EmbeddedArgumentsHandler(embedded, handler), True
         return handler, False
 
     def _validate_embedded_count(self, embedded, arguments):
@@ -326,8 +330,7 @@ class _BaseTestLibrary:
     def _raise_creating_instance_failed(self):
         msg, details = get_error_details()
         if self.positional_args or self.named_args:
-            args = self.positional_args \
-                + ['%s=%s' % item for item in self.named_args]
+            args = self.positional_args + ['%s=%s' % item for item in self.named_args]
             args_text = 'arguments %s' % seq2str2(args)
         else:
             args_text = 'no arguments'

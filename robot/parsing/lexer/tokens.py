@@ -41,6 +41,7 @@ class Token:
     SETTING_HEADER = 'SETTING HEADER'
     VARIABLE_HEADER = 'VARIABLE HEADER'
     TESTCASE_HEADER = 'TESTCASE HEADER'
+    TASK_HEADER = 'TASK HEADER'
     KEYWORD_HEADER = 'KEYWORD HEADER'
     COMMENT_HEADER = 'COMMENT HEADER'
 
@@ -57,6 +58,7 @@ class Token:
     TEST_TIMEOUT = 'TEST TIMEOUT'
     FORCE_TAGS = 'FORCE TAGS'
     DEFAULT_TAGS = 'DEFAULT TAGS'
+    KEYWORD_TAGS = 'KEYWORD TAGS'
     LIBRARY = 'LIBRARY'
     RESOURCE = 'RESOURCE'
     VARIABLES = 'VARIABLES'
@@ -97,6 +99,7 @@ class Token:
     SEPARATOR = 'SEPARATOR'
     COMMENT = 'COMMENT'
     CONTINUATION = 'CONTINUATION'
+    CONFIG = 'CONFIG'
     EOL = 'EOL'
     EOS = 'EOS'
 
@@ -121,6 +124,7 @@ class Token:
         TEST_TIMEOUT,
         FORCE_TAGS,
         DEFAULT_TAGS,
+        KEYWORD_TAGS,
         LIBRARY,
         RESOURCE,
         VARIABLES,
@@ -136,6 +140,7 @@ class Token:
         SETTING_HEADER,
         VARIABLE_HEADER,
         TESTCASE_HEADER,
+        TASK_HEADER,
         KEYWORD_HEADER,
         COMMENT_HEADER
     ))
@@ -153,10 +158,12 @@ class Token:
         self.type = type
         if value is None:
             value = {
-                Token.IF: 'IF', Token.ELSE_IF: 'ELSE IF', Token.ELSE: 'ELSE',
-                Token.INLINE_IF: 'IF', Token.FOR: 'FOR', Token.END: 'END',
-                Token.RETURN_STATEMENT: 'RETURN', Token.CONTINUE: 'CONTINUE', Token.BREAK: 'BREAK',
-                Token.CONTINUATION: '...', Token.EOL: '\n', Token.WITH_NAME: 'WITH NAME'
+                Token.IF: 'IF', Token.INLINE_IF: 'IF', Token.ELSE_IF: 'ELSE IF',
+                Token.ELSE: 'ELSE', Token.FOR: 'FOR', Token.WHILE: 'WHILE',
+                Token.TRY: 'TRY', Token.EXCEPT: 'EXCEPT', Token.FINALLY: 'FINALLY',
+                Token.END: 'END', Token.CONTINUE: 'CONTINUE', Token.BREAK: 'BREAK',
+                Token.RETURN_STATEMENT: 'RETURN', Token.CONTINUATION: '...',
+                Token.EOL: '\n', Token.WITH_NAME: 'WITH NAME', Token.AS: 'AS'
             }.get(type, '')
         self.value = value
         self.lineno = lineno

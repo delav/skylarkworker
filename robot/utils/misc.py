@@ -13,7 +13,6 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from operator import add, sub
 import re
 
 from .robottypes import is_integer
@@ -94,15 +93,24 @@ def seq2str2(sequence):
     return '[ %s ]' % ' | '.join(safe_str(item) for item in sequence)
 
 
-def test_or_task(text, rpa=False):
-    """Replaces `{test}` in `text` with `test` or `task` depending on `rpa`."""
-    def replace(match):
-        test = match.group(1)
+def test_or_task(text: str, rpa: bool):
+    """Replace 'test' with 'task' in the given `text` depending on `rpa`.
+
+     If given text is `test`, `test` or `task` is returned directly. Otherwise,
+     pattern `{test}` is searched from the text and occurrences replaced with
+     `test` or `task`.
+
+     In both cases matching the word `test` is case-insensitive and the returned
+     `test` or `task` has exactly same case as the original.
+     """
+    def replace(test):
         if not rpa:
             return test
         upper = [c.isupper() for c in test]
         return ''.join(c.upper() if up else c for c, up in zip('task', upper))
-    return re.sub('{(test)}', replace, text, flags=re.IGNORECASE)
+    if text.upper() == 'TEST':
+        return replace(text)
+    return re.sub('{(test)}', lambda m: replace(m.group(1)), text, flags=re.IGNORECASE)
 
 
 def isatty(stream):
@@ -115,3 +123,47 @@ def isatty(stream):
         return stream.isatty()
     except ValueError:    # Occurs if file is closed.
         return False
+
+
+def parse_re_flags(flags=None):
+    result = 0
+    if not flags:
+        return result
+    for flag in flags.split('|'):
+        try:
+            re_flag = getattr(re, flag.upper().strip())
+        except AttributeError:
+            raise ValueError(f'Unknown regexp flag: {flag}')
+        else:
+            if isinstance(re_flag, re.RegexFlag):
+                result |= re_flag
+            else:
+                raise ValueError(f'Unknown regexp flag: {flag}')
+    return result
+
+
+class classproperty(property):
+    """Property that works with classes in addition to instances.
+
+    Only supports getters. Setters and deleters cannot work with classes due
+    to how the descriptor protocol works, and they are thus explicitly disabled.
+    Metaclasses must be used if they are needed.
+    """
+
+    def __init__(self, fget, fset=None, fdel=None, doc=None):
+        if fset:
+            self.setter(fset)
+        if fdel:
+            self.deleter(fset)
+        super().__init__(fget)
+        if doc:
+            self.__doc__ = doc
+
+    def __get__(self, instance, owner):
+        return self.fget(owner)
+
+    def setter(self, fset):
+        raise TypeError('Setters are not supported.')
+
+    def deleter(self, fset):
+        raise TypeError('Deleters are not supported.')

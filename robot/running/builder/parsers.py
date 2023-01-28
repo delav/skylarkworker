@@ -19,9 +19,9 @@ from ast import NodeVisitor
 from robot.errors import DataError
 from robot.output import LOGGER
 from robot.parsing import get_model, get_resource_model, get_init_model, Token
-from robot.utils import FileReader, read_rest_data
+from robot.utils import FileReader, read_rest_data, get_source_split
 
-from .testsettings import TestDefaults
+from .settings import Defaults
 from .transformers import SuiteBuilder, SettingsBuilder, ResourceBuilder
 from ..model import TestSuite, ResourceFile
 
@@ -40,12 +40,14 @@ class BaseParser:
 
 class RobotParser(BaseParser):
 
-    def __init__(self, process_curdir=True):
+    def __init__(self, lang=None, process_curdir=True):
+        self.lang = lang
         self.process_curdir = process_curdir
 
     def parse_init_file(self, source, defaults=None):
-        directory = os.path.dirname(source)
-        suite = TestSuite(name=format_name(directory), source=directory)
+        path_split = get_source_split()
+        directory, name = format_init_name(source, path_split)
+        suite = TestSuite(name=name, source=directory)
         return self._build(suite, source, defaults, get_model=get_init_model)
 
     def parse_suite_file(self, source, defaults=None):
@@ -59,10 +61,10 @@ class RobotParser(BaseParser):
 
     def _build(self, suite, source, defaults, model=None, get_model=get_model):
         if defaults is None:
-            defaults = TestDefaults()
+            defaults = Defaults()
         if model is None:
             model = get_model(self._get_source(source), data_only=True,
-                              curdir=self._get_curdir(source))
+                              curdir=self._get_curdir(source), lang=self.lang)
         ErrorReporter(source).visit(model)
         SettingsBuilder(suite, defaults).visit(model)
         SuiteBuilder(suite, defaults).visit(model)
@@ -72,14 +74,14 @@ class RobotParser(BaseParser):
     def _get_curdir(self, source):
         if not self.process_curdir:
             return None
-        return os.path.dirname(source).replace('\\', '\\\\')
+        return source
 
     def _get_source(self, source):
         return source
 
     def parse_resource_file(self, source):
         model = get_resource_model(self._get_source(source), data_only=True,
-                                   curdir=self._get_curdir(source))
+                                   curdir=self._get_curdir(source), lang=self.lang)
         resource = ResourceFile(source=source)
         ErrorReporter(source).visit(model)
         ResourceBuilder(resource).visit(model)
@@ -105,6 +107,20 @@ class NoInitFileDirectoryParser(BaseParser):
 
     def parse_init_file(self, source, defaults=None):
         return TestSuite(name=format_name(source), source=source)
+
+
+def format_init_name(source, path_split):
+
+    def format_init_name(name):
+        path = name.split(path_split)
+        if len(path) >= 2:
+            name = path[-2]
+        directory = path_split.join(path[:-1])
+        return directory, name
+
+    if source is None:
+        return None
+    return format_init_name(source)
 
 
 def format_name(source):
@@ -141,5 +157,4 @@ class ErrorReporter(NodeVisitor):
             LOGGER.error(self._format_message(error))
 
     def _format_message(self, token):
-        return ("Error in file '%s' on line %s: %s"
-                % (self.source, token.lineno, token.error))
+        return f"Error in file '{self.source}' on line {token.lineno}: {token.error}"

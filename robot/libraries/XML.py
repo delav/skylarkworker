@@ -15,13 +15,21 @@
 
 import copy
 import os
-import pathlib
 import re
 
 try:
     from lxml import etree as lxml_etree
 except ImportError:
     lxml_etree = None
+else:
+    # `lxml.etree._Attrib` doesn't extend `Mapping` and thus our `is_dict_like`
+    # doesn't recognize it unless we register it ourselves. Fixed in lxml 4.9.2:
+    # https://bugs.launchpad.net/lxml/+bug/1981760
+    from collections.abc import MutableMapping
+    Attrib = getattr(lxml_etree, '_Attrib', None)
+    if Attrib and not isinstance(Attrib, MutableMapping):
+        MutableMapping.register(Attrib)
+    del Attrib, MutableMapping
 
 from robot.api import logger
 from robot.api.deco import keyword
@@ -508,7 +516,7 @@ class XML:
         the whole structure. See `Parsing XML` section for more details and
         examples.
         """
-        if isinstance(source, pathlib.Path):
+        if isinstance(source, os.PathLike):
             source = str(source)
         with ETSource(source) as source:
             tree = self.etree.parse(source)
@@ -580,7 +588,7 @@ class XML:
         | ${children} =    | Get Elements | ${XML} | first/child |
         | Should Be Empty  |  ${children} |        |             |
         """
-        if is_string(source) or is_bytes(source) or isinstance(source, pathlib.Path):
+        if isinstance(source, (str, bytes, os.PathLike)):
             source = self.parse_xml(source)
         finder = ElementFinder(self.etree, self.modern_etree, self.lxml_etree)
         return finder.find_all(source, xpath)
@@ -1340,7 +1348,8 @@ class XML:
         Use `Element To String` if you just need a string representation of
         the element.
         """
-        path = os.path.abspath(path.replace('/', os.sep))
+        path = os.path.abspath(str(path) if isinstance(path, os.PathLike)
+                               else path.replace('/', os.sep))
         elem = self.get_element(source)
         tree = self.etree.ElementTree(elem)
         config = {'encoding': encoding}

@@ -52,12 +52,12 @@ class Importer:
             LOGGER.info("Imported library '%s' with name '%s'" % (name, alias))
         return lib
 
-    def import_resource(self, path):
+    def import_resource(self, path, lang=None):
         self._validate_resource_extension(path)
         if path in self._resource_cache:
             LOGGER.info("Found resource file '%s' from cache" % path)
         else:
-            resource = ResourceFileBuilder().build(path)
+            resource = ResourceFileBuilder(lang=lang).build(path)
             self._resource_cache[path] = resource
         return self._resource_cache[path]
 
@@ -98,7 +98,7 @@ class Importer:
         lib.name = name
         lib.scope = type(lib.scope)(lib)
         lib.reset_instance()
-        lib.handlers = HandlerStore(orig.handlers.source, orig.handlers.source_type)
+        lib.handlers = HandlerStore()
         for handler in orig.handlers._normal.values():
             handler = copy.copy(handler)
             handler.library = lib

@@ -28,6 +28,7 @@ class UserErrorHandler:
     tests in affected test case file from executing. Instead UserErrorHandler
     is created and if it is ever run DataError is raised then.
     """
+    supports_embedded_arguments = False
 
     def __init__(self, error, name, libname=None, source=None, lineno=None):
         """
@@ -58,7 +59,7 @@ class UserErrorHandler:
     def shortdoc(self):
         return self.doc.splitlines()[0]
 
-    def create_runner(self, name):
+    def create_runner(self, name, languages=None):
         return self
 
     def run(self, kw, context, run=True):

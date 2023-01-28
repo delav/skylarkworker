@@ -19,14 +19,15 @@ from itertools import chain
 
 from robot.model import Tags
 from robot.running import ArgumentSpec
-from robot.utils import getshortdoc, get_timestamp, Sortable, setter
+from robot.utils import getshortdoc, Sortable, setter
 
 from .htmlutils import DocFormatter, DocToHtml, HtmlToText
 from .writer import LibdocWriter
-from .output import LibdocOutput
+from .output import LibdocOutput, get_generation_time
 
 
 class LibraryDoc:
+    """Documentation for a library, a resource file or a suite file."""
 
     def __init__(self, name='', doc='', version='', type='LIBRARY', scope='TEST',
                  doc_format='ROBOT', source=None, lineno=-1):
@@ -67,10 +68,12 @@ class LibraryDoc:
 
     @setter
     def inits(self, inits):
+        """Initializer docs as :class:`~KeywordDoc` instances."""
         return self._process_keywords(inits)
 
     @setter
     def keywords(self, kws):
+        """Keyword docs as :class:`~KeywordDoc` instances."""
         return self._process_keywords(kws)
 
     @setter
@@ -86,9 +89,9 @@ class LibraryDoc:
     def all_tags(self):
         return Tags(chain.from_iterable(kw.tags for kw in self.keywords))
 
-    def save(self, output=None, format='HTML'):
+    def save(self, output=None, format='HTML', theme=None):
         with LibdocOutput(output, format) as outfile:
-            LibdocWriter(format).write(self, outfile)
+            LibdocWriter(format, theme).write(self, outfile)
 
     def convert_docs_to_html(self):
         formatter = DocFormatter(self.keywords, self.type_docs, self.doc, self.doc_format)
@@ -108,12 +111,13 @@ class LibraryDoc:
                 type_doc.doc = formatter.html(type_doc.doc)
         self.doc_format = 'HTML'
 
-    def to_dictionary(self):
-        return {
+    def to_dictionary(self, include_private=False, theme=None):
+        data = {
+            'specversion': 1,
             'name': self.name,
             'doc': self.doc,
             'version': self.version,
-            'generated': get_timestamp(daysep='-', millissep=None),
+            'generated': get_generation_time(),
             'type': self.type,
             'scope': self.scope,
             'docFormat': self.doc_format,
@@ -121,11 +125,15 @@ class LibraryDoc:
             'lineno': self.lineno,
             'tags': list(self.all_tags),
             'inits': [init.to_dictionary() for init in self.inits],
-            'keywords': [kw.to_dictionary() for kw in self.keywords],
-            # 'dataTypes' was deprecated in RF 5, 'types' should be used instead.
+            'keywords': [kw.to_dictionary() for kw in self.keywords
+                         if include_private or not kw.private],
+            # 'dataTypes' was deprecated in RF 5, 'typedoc' should be used instead.
             'dataTypes': self._get_data_types(self.type_docs),
             'typedocs': [t.to_dictionary() for t in sorted(self.type_docs)]
         }
+        if theme:
+            data['theme'] = theme.lower()
+        return data
 
     def _get_data_types(self, types):
         enums = sorted(t for t in types if t.type == 'Enum')
@@ -135,20 +143,23 @@ class LibraryDoc:
             'typedDicts': [t.to_dictionary(legacy=True) for t in typed_dicts]
         }
 
-    def to_json(self, indent=None):
-        data = self.to_dictionary()
+    def to_json(self, indent=None, include_private=True, theme=None):
+        data = self.to_dictionary(include_private, theme)
         return json.dumps(data, indent=indent)
 
 
 class KeywordDoc(Sortable):
+    """Documentation for a single keyword or an initializer."""
 
-    def __init__(self, name='', args=None, doc='', shortdoc='', tags=(), source=None,
-                 lineno=-1, parent=None):
+    def __init__(self, name='', args=None, doc='', shortdoc='', tags=(), private=False,
+                 deprecated=False, source=None, lineno=-1, parent=None):
         self.name = name
         self.args = args or ArgumentSpec()
         self.doc = doc
         self._shortdoc = shortdoc
         self.tags = Tags(tags)
+        self.private = private
+        self.deprecated = deprecated
         self.source = source
         self.lineno = lineno
         self.parent = parent
@@ -171,15 +182,11 @@ class KeywordDoc(Sortable):
         self._shortdoc = shortdoc
 
     @property
-    def deprecated(self):
-        return self.doc.startswith('*DEPRECATED') and '*' in self.doc[1:]
-
-    @property
     def _sort_key(self):
         return self.name.lower()
 
     def to_dictionary(self):
-        return {
+        data = {
             'name': self.name,
             'args': [self._arg_to_dict(arg) for arg in self.args],
             'doc': self.doc,
@@ -188,6 +195,11 @@ class KeywordDoc(Sortable):
             'source': self.source,
             'lineno': self.lineno
         }
+        if self.private:
+            data['private'] = True
+        if self.deprecated:
+            data['deprecated'] = True
+        return data
 
     def _arg_to_dict(self, arg):
         return {
