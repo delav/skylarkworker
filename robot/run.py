@@ -29,8 +29,9 @@ This module is also used by the installed ``robot`` start-up script.
 This module also provides :func:`run` and :func:`run_cli` functions
 that can be used programmatically. Other code is for internal usage.
 """
-
+import os
 import sys
+from handler.testhandler import TestHandler
 
 # Allows running as a script. __name__ check needed with multiprocessing:
 # https://github.com/robotframework/robotframework/issues/1137
@@ -43,7 +44,7 @@ from robot.output import LOGGER, pyloggingconf
 from robot.reporting import ResultWriter
 from robot.running.builder import TestSuiteBuilder
 from robot.utils import Application, text
-from robot.utils import DataReader
+from robot.utils.datareader import DataReader
 
 
 USAGE = """Robot Framework -- A generic automation framework
@@ -423,10 +424,12 @@ class RobotFramework(Application):
 
     def main(self, datasources, **options):
         try:
+            reader = DataReader(options.pop('sources'))
+            build_id = options.pop('taskid')
+            batch_no = options.pop('batch')
+            handler = TestHandler(build_id, batch_no)
+            handler.start_testing()
             settings = RobotSettings(options)
-            task_id = options.get('metadata')['taskid']
-            source_data = options.get('metadata')['data']
-            reader = DataReader(task_id, source_data)
         except:
             LOGGER.register_console_logger(stdout=options.get('stdout'),
                                            stderr=options.get('stderr'))
@@ -458,6 +461,8 @@ class RobotFramework(Application):
                 text.MAX_ASSIGN_LENGTH = old_max_assign_length
             LOGGER.info("Tests execution ended. Statistics:\n%s"
                         % result.suite.stat_message)
+            reader.clear()
+            handler.end_testing(result.suite.stat_message, settings.output)
             if settings.log or settings.report or settings.xunit:
                 writer = ResultWriter(settings.output if settings.log
                                       else result)

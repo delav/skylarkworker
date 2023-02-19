@@ -2,26 +2,28 @@ from datetime import datetime
 from celeryapp import app
 from robot.run import run
 from plugin.RobotListener import RobotListener
-from plugin.RebotModifier import RobotModifier
 
 
-@app.task(bind=True)
-def robot_runner(self, build_id, run_suite, meta_data, report_path):
-    app.send_task(
-        'task.tasks.robot_notifier',
-        queue='notifier',
-        args=(build_id,),
-        kwargs={'start_time': datetime.now().timestamp(), 'status': 1}
-    )
+@app.task
+def robot_runner(build_id, batch_no, run_suite, run_data):
+    """execute test"""
+    now = datetime.now().strftime('%Y%m%d%H%M%S')
+    output_file = f'{now}_{build_id}_{batch_no}.xml'
     run(*run_suite,
-        outputdir=report_path,
-        metadata=meta_data,
-        listener=RobotListener(build_id),)
-        # prerebotmodifier=RobotModifier())  # UserWarning: 'keywords' attribute is read-only and deprecated since Robot Framework 4.0. Use 'body', 'setup' or 'teardown' instead.
+        outputdir='output',
+        output=output_file,
+        report=None,
+        log=None,
+        # console='quiet',
+        taskid=build_id,
+        batch=batch_no,
+        sources=run_data,
+        listener=RobotListener(build_id),
+        )
 
 
-@app.task(bind=True)
-def robot_notifier(self, task_id, msg_type):
+@app.task
+def robot_notifier(build_id):
     """robot notice task, no logic needed here, master will do it"""
     pass
 

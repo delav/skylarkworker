@@ -34,8 +34,7 @@ class DataReader(metaclass=ThreadSafeSingleton):
     Get file content by path from metadata,
     """
 
-    def __init__(self, task_id=None, source_data=None):
-        self.taskid = task_id
+    def __init__(self, source_data=None):
         self.sources = source_data
 
     def __enter__(self):
@@ -52,6 +51,10 @@ class DataReader(metaclass=ThreadSafeSingleton):
         if '\r\n' in content:
             content = content.replace('\r\n', '\n')
         return content
+
+    @classmethod
+    def clear(cls):
+        cls._instances = {}
 
 
 def get_source_split():

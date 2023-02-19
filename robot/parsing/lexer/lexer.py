@@ -98,7 +98,8 @@ class Lexer:
 
     def _read(self, source):
         try:
-            return DataReader().read(source)
+            reader = DataReader()
+            return reader.read(source)
         except Exception:
             raise DataError(get_error_message())
 

@@ -3,14 +3,14 @@ from settings import REDIS_HOST, REDIS_PORT
 
 
 # Celery config
+imports = ('task.tasks',)
 broker_url = f'redis://{REDIS_HOST}:{REDIS_PORT}/0'
 result_backend = f'redis://{REDIS_HOST}:{REDIS_PORT}/0'
 task_queues = (
     Queue('runner', routing_key='runner'),
-    Queue('notifier', routing_key='notifier'),
  )
 task_routes = {
-    'task.tasks.robot_runner': {'queue': 'runner', 'routing_key': 'runner'}
+    'task.robot.robot_runner': {'queue': 'runner', 'routing_key': 'runner'}
  }
 # notify mq message is consumed only task finish
 ack_late = True
