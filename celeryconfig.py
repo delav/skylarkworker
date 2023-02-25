@@ -1,16 +1,16 @@
 from kombu import Queue
-from settings import REDIS_HOST, REDIS_PORT
+from settings import REDIS_HOST, REDIS_PORT, CELERY_TASKS_PATH, RUNNER_QUEUE, RUNNER_TASK, RUNNER_ROUTING_KEY
 
 
 # Celery config
-imports = ('task.tasks',)
+imports = CELERY_TASKS_PATH
 broker_url = f'redis://{REDIS_HOST}:{REDIS_PORT}/0'
 result_backend = f'redis://{REDIS_HOST}:{REDIS_PORT}/0'
 task_queues = (
-    Queue('runner', routing_key='runner'),
+    Queue(RUNNER_QUEUE, routing_key=RUNNER_ROUTING_KEY),
  )
 task_routes = {
-    'task.robot.robot_runner': {'queue': 'runner', 'routing_key': 'runner'}
+    RUNNER_TASK: {'queue': RUNNER_QUEUE, 'routing_key': RUNNER_ROUTING_KEY}
  }
 # notify mq message is consumed only task finish
 ack_late = True

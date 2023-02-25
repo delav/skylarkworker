@@ -2,7 +2,7 @@ import os
 import json
 from datetime import datetime
 from celeryapp import app
-from settings import ROBOT_REDIS_URL, TASK_RESULT_KEY_PREFIX
+from settings import ROBOT_REDIS_URL, TASK_RESULT_KEY_PREFIX, NOTIFIER_QUEUE, NOTIFIER_TASK, NOTIFIER_ROUTING_KEY
 from handler.redisclient import RedisClient
 
 
@@ -31,8 +31,9 @@ class TestHandler(object):
         filed = self.build_id + '-' + self.batch_no
         self.conn.hset(redis_key, filed, json.dumps(batch_result))
         app.send_task(
-            'task.tasks.robot_notifier',
-            queue='notifier',
+            NOTIFIER_TASK,
+            queue=NOTIFIER_QUEUE,
+            routing_key=NOTIFIER_ROUTING_KEY,
             args=(self.build_id,),
         )
 
