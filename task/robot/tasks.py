@@ -14,7 +14,7 @@ def robot_runner(build_id, batch_no, run_suite, run_data):
         output=output_file,
         report=None,
         log=None,
-        # console='quiet',
+        console='quiet',
         taskid=build_id,
         batch=batch_no,
         sources=run_data,
