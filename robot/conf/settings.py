@@ -478,7 +478,9 @@ class RobotSettings(_BaseSettings):
                        'ConsoleWidth'       : ('consolewidth', 78),
                        'ConsoleMarkers'     : ('consolemarkers', 'AUTO'),
                        'DebugFile'          : ('debugfile', None),
-                       'Language'           : ('language', [])}
+                       'Language'           : ('language', []),
+                       'Environment'        : ('environment', None),
+                       'Region'             : ('region', None)}
     _languages = None
 
     def get_rebot_settings(self):
@@ -497,6 +499,14 @@ class RobotSettings(_BaseSettings):
 
     def _escape_doc(self, value):
         return escape(value)
+
+    @property
+    def region(self):
+        return self['Region']
+
+    @property
+    def environment(self):
+        return self['Environment']
 
     @property
     def listeners(self):

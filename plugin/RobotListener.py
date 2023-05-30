@@ -7,10 +7,10 @@ from handler.redisclient import RedisClient
 class RobotListener(object):
     ROBOT_LISTENER_API_VERSION = 3
 
-    def __init__(self, build_id):
-        self.build_id = build_id
+    def __init__(self, task_id):
+        self.task_id = task_id
         self.conn = RedisClient(ROBOT_REDIS_URL).connector
-        self.case_redis_key = CASE_RESULT_KEY_PREFIX + self.build_id
+        self.case_redis_key = CASE_RESULT_KEY_PREFIX + self.task_id
 
     def start_suite(self, data, result):
         pass

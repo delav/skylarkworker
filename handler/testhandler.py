@@ -9,8 +9,8 @@ from handler.redisclient import RedisClient
 
 class TestHandler(object):
 
-    def __init__(self, build_id, batch_no):
-        self.build_id = build_id
+    def __init__(self, task_id, batch_no):
+        self.task_id = task_id
         self.batch_no = batch_no
         self.conn = RedisClient(ROBOT_REDIS_URL).connector
 
@@ -20,7 +20,7 @@ class TestHandler(object):
     def end_testing(self, stat_message, output):
         output_ctx = self._read_from_file(output)
         stat = self._stat_parser(stat_message)
-        redis_key = TASK_RESULT_KEY_PREFIX + self.build_id
+        redis_key = TASK_RESULT_KEY_PREFIX + self.task_id
         batch_result = {
             'start_time': self.start_time,
             'failed': stat.get('failed', 0),
@@ -29,14 +29,14 @@ class TestHandler(object):
             'end_time': datetime.now().timestamp(),
             'output': output_ctx,
         }
-        filed = self.build_id + '-' + self.batch_no
+        filed = self.task_id + '-' + self.batch_no
         self.conn.hset(redis_key, filed, json.dumps(batch_result))
         self.conn.expire(redis_key, REDIS_EXPIRE_TIME)
         app.send_task(
             NOTIFIER_TASK,
             queue=NOTIFIER_QUEUE,
             routing_key=NOTIFIER_ROUTING_KEY,
-            args=(self.build_id,),
+            args=(self.task_id,),
         )
 
     def _stat_parser(self, result_str):
