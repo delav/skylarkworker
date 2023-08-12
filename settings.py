@@ -1,3 +1,10 @@
+from pathlib import Path
+
+# Project base dir
+BASE_DIR = Path(__file__).resolve().parent
+# run file path
+FILE_DIR = BASE_DIR / 'files'
+
 # Redis
 REDIS_HOST = '127.0.0.1'
 REDIS_PORT = 6379
