@@ -425,9 +425,13 @@ class RobotFramework(Application):
     def main(self, datasources, **options):
         try:
             reader = DataReader(options.pop('sources'))
-            task_id = options.pop('taskid')
-            batch_no = options.pop('batch')
-            handler = TestHandler(task_id, batch_no)
+            handler = TestHandler(
+                options.pop('taskid'),
+                options.pop('batch'),
+                options.pop('project'),
+                options.get('environment'),
+                options.get('region')
+            )
             handler.start_testing()
             settings = RobotSettings(options)
         except:

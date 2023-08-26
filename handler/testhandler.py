@@ -9,9 +9,12 @@ from handler.redisclient import RedisClient
 
 class TestHandler(object):
 
-    def __init__(self, task_id, batch_no):
+    def __init__(self, task_id, batch_no, project, env, region):
         self.task_id = task_id
         self.batch_no = batch_no
+        self.project = project
+        self.env = env
+        self.region = region
         self.conn = RedisClient(ROBOT_REDIS_URL).connector
 
     def start_testing(self):
@@ -36,7 +39,7 @@ class TestHandler(object):
             NOTIFIER_TASK,
             queue=NOTIFIER_QUEUE,
             routing_key=NOTIFIER_ROUTING_KEY,
-            args=(self.task_id,),
+            args=(self.task_id, self.project, self.env, self.region),
         )
 
     def _stat_parser(self, result_str):
