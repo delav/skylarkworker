@@ -32,7 +32,7 @@ class TestHandler(object):
             'end_time': datetime.now().timestamp(),
             'output': output_ctx,
         }
-        filed = self.task_id + '-' + self.batch_no
+        filed = self.task_id + '_' + self.batch_no
         self.conn.hset(redis_key, filed, json.dumps(batch_result))
         self.conn.expire(redis_key, REDIS_EXPIRE_TIME)
         app.send_task(
