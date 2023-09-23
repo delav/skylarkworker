@@ -18,9 +18,15 @@ class TestHandler(object):
         self.conn = RedisClient(ROBOT_REDIS_URL).connector
 
     def start_testing(self):
+        """
+        record time when robot start execute
+        """
         self.start_time = datetime.now().timestamp()
 
     def end_testing(self, stat_message, output):
+        """
+        handler result when robot process end
+        """
         output_ctx = self._read_from_file(output)
         stat = self._stat_parser(stat_message)
         redis_key = TASK_RESULT_KEY_PREFIX + self.task_id
@@ -30,11 +36,16 @@ class TestHandler(object):
             'passed': stat.get('passed', 0),
             'skipped': stat.get('skipped', 0),
             'end_time': datetime.now().timestamp(),
-            'output': output_ctx,
         }
+        # save output file content to redis
+        output_redis_key = redis_key + f':output_{self.batch_no}'
+        self.conn.set(output_redis_key, output_ctx)
+        self.conn.expire(output_redis_key, REDIS_EXPIRE_TIME)
+        # save execute result info to redis
         filed = self.task_id + '_' + self.batch_no
         self.conn.hset(redis_key, filed, json.dumps(batch_result))
         self.conn.expire(redis_key, REDIS_EXPIRE_TIME)
+        # send execute finish notice task to master
         app.send_task(
             NOTIFIER_TASK,
             queue=NOTIFIER_QUEUE,
@@ -43,6 +54,9 @@ class TestHandler(object):
         )
 
     def _stat_parser(self, result_str):
+        """
+        parse result of pass/fail/skip case number
+        """
         state_count = {}
         state_strs = result_str.split(',')
         for item in state_strs:
@@ -51,6 +65,9 @@ class TestHandler(object):
         return state_count
 
     def _read_from_file(self, file_path):
+        """
+        read result output xml file
+        """
         f = open(file_path, 'r', encoding='utf-8')
         _text = f.read()
         f.close()

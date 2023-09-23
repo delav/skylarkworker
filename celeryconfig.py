@@ -13,20 +13,18 @@ task_routes = {
     RUNNER_TASK: {'queue': RUNNER_QUEUE, 'routing_key': RUNNER_ROUTING_KEY}
  }
 # notify mq message is consumed only task finish
-ack_late = True
-# data type of task accept
-accept_content = ['json']
+ack_late = False
 # serialize type
 task_serializer = 'json'
 # timezone
 timezone = 'Asia/Shanghai'
 enable_utc = False
 # task result expire time(s)
-result_expires = 60*60
+# result_expires = 60*60
 # not receive ack will send to other worker
 disable_rate_limits = True
 # result not send to broker
-# ignore_result = True
+task_ignore_result = True
 # disable prefetch task, default 4
 worker_prefetch_multiplier = 1
 # worker concurrency num

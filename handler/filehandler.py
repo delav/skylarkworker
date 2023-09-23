@@ -11,6 +11,9 @@ SEMAPHORE_NUMBER = 8
 
 
 def async_handler(*args: tuple):
+    """
+    async request handler with event loop
+    """
     task_list = []
     event_loop = asyncio.new_event_loop()
     asyncio.set_event_loop(event_loop)
@@ -21,12 +24,17 @@ def async_handler(*args: tuple):
         task = asyncio.ensure_future(
             func(sem, *arg))
         task_list.append(task)
-    results = event_loop.run_until_complete(asyncio.gather(*task_list))
+    results = event_loop.run_until_complete(
+        asyncio.gather(*task_list)
+    )
     event_loop.close()
     return dict(results)
 
 
 def variable_file_checker(env, region, file_map):
+    """
+    check whether the variable files need to be updated
+    """
     if not isinstance(file_map, dict):
         try:
             file_map = json.loads(file_map)
@@ -48,6 +56,9 @@ def variable_file_checker(env, region, file_map):
 
 
 def project_file_checker(file_map):
+    """
+    check whether the project files need to be downloaded from master
+    """
     if not isinstance(file_map, dict):
         try:
             file_map = json.loads(file_map)
@@ -70,6 +81,9 @@ def project_file_checker(file_map):
 
 
 def get_file_and_path(file_str):
+    """
+    get file name and file dir
+    """
     child_path = file_str.split(PATH_SEPARATOR)
     relative_path = child_path[:-1]
     file_dir = Path(FILE_DIR, *relative_path)
@@ -78,6 +92,9 @@ def get_file_and_path(file_str):
 
 
 async def download_file_form_master(sem, file_info, file, file_dir):
+    """
+    download project file from master
+    """
     headers = {}
     request_url = file_info.get('host') + file_info.get('api')
     request_params = file_info.get('params')
