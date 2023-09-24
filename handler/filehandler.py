@@ -43,8 +43,11 @@ def variable_file_checker(env, region, file_map):
     absolute_file = []
     for file_name, file_text in file_map.items():
         file, file_dir = get_file_and_path(file_name)
-        file_and_arg = f'{file}:{env}:{region}'
-        absolute_file.append(file_and_arg)
+        if file_name.endswith('.py'):
+            file_and_arg = f'{file}:{env}:{region}'
+            absolute_file.append(file_and_arg)
+        else:
+            absolute_file.append(f'{file}')
         if file.is_file():
             continue
         if not file_dir.is_dir():
