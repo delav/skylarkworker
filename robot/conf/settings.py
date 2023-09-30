@@ -479,6 +479,7 @@ class RobotSettings(_BaseSettings):
                        'ConsoleMarkers'     : ('consolemarkers', 'AUTO'),
                        'DebugFile'          : ('debugfile', None),
                        'Language'           : ('language', []),
+                       'FileDir'            : ('filedir', ''),
                        'Environment'        : ('environment', None),
                        'Region'             : ('region', None)}
     _languages = None
@@ -499,6 +500,10 @@ class RobotSettings(_BaseSettings):
 
     def _escape_doc(self, value):
         return escape(value)
+
+    @property
+    def file_dir(self):
+        return self['FileDir']
 
     @property
     def region(self):

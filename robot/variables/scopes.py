@@ -212,6 +212,7 @@ class GlobalVariables(Variables):
                             ('${PREV_TEST_NAME}', ''),
                             ('${PREV_TEST_STATUS}', ''),
                             ('${PREV_TEST_MESSAGE}', ''),
+                            ('${FILEDIR}', settings.file_dir),
                             ('${ENV}', settings.environment),
                             ('${REGION}', settings.region)]:
             self[name] = GlobalVariableValue(value)
