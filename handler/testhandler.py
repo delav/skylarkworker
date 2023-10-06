@@ -22,6 +22,12 @@ class TestHandler(object):
         record time when robot start execute
         """
         self.start_time = datetime.now().timestamp()
+        app.send_task(
+            NOTIFIER_TASK,
+            queue=NOTIFIER_QUEUE,
+            routing_key=NOTIFIER_ROUTING_KEY,
+            args=(self.task_id, self.project, self.env, self.region, 'start'),
+        )
 
     def end_testing(self, stat_message, output):
         """
@@ -50,7 +56,7 @@ class TestHandler(object):
             NOTIFIER_TASK,
             queue=NOTIFIER_QUEUE,
             routing_key=NOTIFIER_ROUTING_KEY,
-            args=(self.task_id, self.project, self.env, self.region),
+            args=(self.task_id, self.project, self.env, self.region, 'end'),
         )
 
     def _stat_parser(self, result_str):
@@ -61,7 +67,12 @@ class TestHandler(object):
         state_strs = result_str.split(',')
         for item in state_strs:
             cs = item.split()
-            state_count[cs[1]] = cs[0]
+            if len(cs) != 2:
+                continue
+            number = 0
+            if cs[0].isdigit():
+                number = int(cs[0])
+            state_count[cs[1]] = number
         return state_count
 
     def _read_from_file(self, file_path):

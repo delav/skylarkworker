@@ -33,7 +33,7 @@ def robot_runner(project, env, region, task_id, batch_no, run_suite, run_data, v
 
 
 @app.task
-def robot_notifier(task_id, project, env, region):
+def robot_notifier(task_id, project, env, region, notify_type):
     """robot notice task, no logic needed here, master will do it"""
     pass
 
