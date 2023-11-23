@@ -8,10 +8,8 @@ from pathlib import Path
 from aiohttp import ClientSession
 from settings import FILE_DIR
 
-PATH_SEPARATOR = '/'
 
-
-def variable_file_checker(env, region, file_map):
+def variable_file_maker(file_map, env, region, args):
     """
     check whether the variable files need to be updated
     """
@@ -19,12 +17,16 @@ def variable_file_checker(env, region, file_map):
         try:
             file_map = json.loads(file_map)
         except (Exception,):
-            return
+            return []
     absolute_file = []
-    for file_name, file_text in file_map.items():
-        file, file_dir = get_file_and_path(file_name)
-        if file_name.endswith('.py'):
+    args = args.strip()
+    for path_name, file_text in file_map.items():
+        file = Path(FILE_DIR, path_name)
+        file_dir = file.parent
+        if path_name.endswith('.py'):
             file_and_arg = f'{file}:{env}:{region}'
+            if args:
+                file_and_arg = file_and_arg + f':{args}'
             absolute_file.append(file_and_arg)
         else:
             absolute_file.append(f'{file}')
@@ -38,7 +40,7 @@ def variable_file_checker(env, region, file_map):
     return absolute_file
 
 
-def project_file_checker(file_map):
+def project_file_maker(file_map):
     asyncio.run(download_many_by_file_map(file_map))
 
 
@@ -50,11 +52,12 @@ async def download_many_by_file_map(file_map):
         try:
             file_map = json.loads(file_map)
         except (Exception,):
-            return
+            return []
     task_list = []
     async with ClientSession() as session:
-        for file_name, file_info in file_map.items():
-            file, file_dir = get_file_and_path(file_name)
+        for path_name, file_info in file_map.items():
+            file = Path(FILE_DIR, path_name)
+            file_dir = file.parent
             if not file.is_file():
                 task = asyncio.create_task(download_file_form_master(session, file_info, file, file_dir))
                 task_list.append(task)
@@ -65,17 +68,6 @@ async def download_many_by_file_map(file_map):
                 task_list.append(task)
         results = await asyncio.gather(*task_list)
         return len(results)
-
-
-def get_file_and_path(file_str):
-    """
-    get file name and file dir
-    """
-    child_path = file_str.split(PATH_SEPARATOR)
-    relative_path = child_path[:-1]
-    file_dir = Path(FILE_DIR, *relative_path)
-    file = Path(FILE_DIR, *child_path)
-    return file, file_dir
 
 
 async def download_file_form_master(session, file_info, file, file_dir):
