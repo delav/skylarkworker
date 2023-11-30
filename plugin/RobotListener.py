@@ -16,17 +16,13 @@ class RobotListener(object):
         pass
 
     def start_test(self, data, result):
-        value = {'start_time': datetime.now().timestamp()}
+        pass
+
+    def end_test(self, data, result):
+        value = {'start_time': result.starttime, 'end_time': result.endtime, 'result': result.status}
         json_value = json.dumps(value)
         self.conn.hset(self.case_redis_key, data.doc, json_value)
         self.conn.expire(self.case_redis_key, REDIS_EXPIRE_TIME)
-
-    def end_test(self, data, result):
-        json_value = self.conn.hget(self.case_redis_key, data.doc)
-        dict_value = json.loads(json_value)
-        dict_value.update({'end_time': datetime.now().timestamp(), 'result': result.status})
-        new_json_value = json.dumps(dict_value)
-        self.conn.hset(self.case_redis_key, data.doc, new_json_value)
 
     def end_suite(self, data, result):
         pass
