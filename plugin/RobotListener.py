@@ -19,7 +19,10 @@ class RobotListener(object):
         pass
 
     def end_test(self, data, result):
-        value = {'start_time': result.starttime, 'end_time': result.endtime, 'result': result.status}
+        date_format = "%Y%m%d %H:%M:%S.%f"
+        start_time = datetime.strptime(result.starttime, date_format).timestamp()
+        end_time = datetime.strptime(result.endtime, date_format).timestamp()
+        value = {'start_time': start_time, 'end_time': end_time, 'result': result.status}
         json_value = json.dumps(value)
         self.conn.hset(self.case_redis_key, data.doc, json_value)
         self.conn.expire(self.case_redis_key, REDIS_EXPIRE_TIME)
