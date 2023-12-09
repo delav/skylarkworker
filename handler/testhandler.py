@@ -3,7 +3,7 @@ import json
 from datetime import datetime
 from celeryapp import app
 from settings import ROBOT_REDIS_URL, TASK_RESULT_KEY_PREFIX, REDIS_EXPIRE_TIME
-from settings import NOTIFIER_QUEUE, NOTIFIER_TASK, NOTIFIER_ROUTING_KEY
+from settings import NOTIFIER_QUEUE, NOTIFIER_TASK
 from handler.redisclient import RedisClient
 
 
@@ -25,7 +25,6 @@ class TestHandler(object):
         app.send_task(
             NOTIFIER_TASK,
             queue=NOTIFIER_QUEUE,
-            routing_key=NOTIFIER_ROUTING_KEY,
             args=(self.task_id, self.project, self.env, self.region, 'start'),
         )
 
@@ -55,7 +54,6 @@ class TestHandler(object):
         app.send_task(
             NOTIFIER_TASK,
             queue=NOTIFIER_QUEUE,
-            routing_key=NOTIFIER_ROUTING_KEY,
             args=(self.task_id, self.project, self.env, self.region, 'end'),
         )
 

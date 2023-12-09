@@ -1,4 +1,9 @@
+import socket
 from pathlib import Path
+
+# get local hostname and ip addr
+HOSTNAME = socket.gethostname()
+IP = socket.gethostbyname(HOSTNAME)
 
 # Project base dir
 BASE_DIR = Path(__file__).resolve().parent
@@ -18,12 +23,18 @@ TASK_RESULT_KEY_PREFIX = 'robot:task:'
 # Celery task
 CELERY_TASKS_PATH = (
     'task.robot.tasks',
+    'task.exchange.tasks'
 )
+
 RUNNER_QUEUE = 'runner'
-RUNNER_TASK = 'task.robot.tasks.robot_runner'
-RUNNER_ROUTING_KEY = 'robot.runner'
 NOTIFIER_QUEUE = 'notifier'
+EXCHANGE_QUEUE = 'exchanger'
+EXCLUSIVE_QUEUE = 'worker_' + IP
 NOTIFIER_TASK = 'task.robot.tasks.robot_notifier'
-NOTIFIER_ROUTING_KEY = 'robot.notifier'
+RUNNER_TASK = 'task.robot.tasks.robot_runner'
+HEARTBEAT_TASK = 'task.exchange.tasks.heartbeat'
+COLLECT_TASK = 'task.exchange.tasks.worker_collector'
+COMMAND_TASK = 'task.exchange.tasks.command_executor'
+
 
 
