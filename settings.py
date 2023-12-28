@@ -10,6 +10,10 @@ BASE_DIR = Path(__file__).resolve().parent
 # run file path
 FILE_DIR = BASE_DIR / 'files'
 
+# Library path
+LIBRARY_GIT = 'https://github.com/delav/skylarklibrary.git'
+LIBRARY_PATH = BASE_DIR.parent
+
 # Redis
 REDIS_HOST = '127.0.0.1'
 REDIS_PORT = 6379
