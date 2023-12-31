@@ -1,12 +1,7 @@
 import os
-import sys
 from celery import Celery
 from celery.signals import heartbeat_sent, worker_ready, worker_shutdown
 from settings import IP, HOSTNAME, EXCHANGE_QUEUE, EXCLUSIVE_QUEUE, HEARTBEAT_TASK, COLLECT_TASK
-
-
-WORKER = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, WORKER)
 
 os.environ.setdefault('FORKED_BY_MULTIPROCESSING', '1')
 app = Celery('skylarkworker')

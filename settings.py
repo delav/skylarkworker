@@ -1,3 +1,4 @@
+import sys
 import socket
 from pathlib import Path
 
@@ -12,7 +13,9 @@ FILE_DIR = BASE_DIR / 'files'
 
 # Library path
 LIBRARY_GIT = 'https://github.com/delav/skylarklibrary.git'
-LIBRARY_PATH = BASE_DIR.parent
+LIBRARY_PATH = BASE_DIR.parent / 'skylarklibrary'
+# set library path to python path
+sys.path.insert(0, LIBRARY_PATH.as_posix())
 
 # Redis
 REDIS_HOST = '127.0.0.1'
@@ -39,6 +42,4 @@ RUNNER_TASK = 'task.robot.tasks.robot_runner'
 HEARTBEAT_TASK = 'task.exchange.tasks.heartbeat'
 COLLECT_TASK = 'task.exchange.tasks.worker_collector'
 COMMAND_TASK = 'task.exchange.tasks.command_executor'
-
-
 
