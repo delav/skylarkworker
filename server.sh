@@ -1,1 +1,1 @@
-celery -A task.tasks worker -Q runner -n worker.runner -O fair --loglevel=info
+celery -A task worker -n worker.%h -l info
