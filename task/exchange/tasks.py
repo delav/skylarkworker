@@ -1,3 +1,4 @@
+import uuid
 from handler.gitclient import GitClient
 from settings import LIBRARY_GIT, LIBRARY_PATH
 from celeryapp import app
@@ -14,9 +15,11 @@ def worker_collector(info_type, info):
 
 
 @app.task
-def command_executor(cmd):
+def command_executor(cmd, *args):
     if cmd == 'git':
         _update_library_repository()
+    if cmd == 'stop':
+        _interrupt_task(args[0])
 
 
 def _update_library_repository():
@@ -43,3 +46,16 @@ def _update_library_repository():
                 continue
             break
     return update_flag
+
+
+def _interrupt_task(task_id):
+    if not task_id:
+        return
+    task_id_list = task_id.split(',')
+    for tid in task_id_list:
+        if str(uuid.UUID(tid)) != tid:
+            continue
+        try:
+            app.control.revoke(tid, terminate=True)
+        except (Exception,):
+            pass
